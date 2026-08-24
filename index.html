@@ -2,32 +2,43 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>CyberPenguin Chat</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #0a0e14; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; justify-content: center; align-items: center; }
-    .app { width: 100%; max-width: 800px; height: 90vh; background: #0f161e; border-radius: 20px; display: flex; overflow: hidden; box-shadow: 0 0 30px #00ffcc22; }
-    .sidebar { width: 250px; background: #141c24; border-right: 1px solid #00ffcc44; display: flex; flex-direction: column; }
-    .sidebar-header { padding: 16px; border-bottom: 1px solid #00ffcc44; color: #00ffcc; font-size: 18px; font-weight: bold; text-align: center; }
-    .user-list { flex: 1; overflow-y: auto; padding: 8px; }
-    .user-item { padding: 12px; border-radius: 12px; color: #00ffcc; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
+    .app { width: 100%; max-width: 800px; height: 100vh; max-height: 700px; background: #0f161e; display: flex; overflow: hidden; box-shadow: 0 0 30px #00ffcc22; border-radius: 0; }
+    @media (min-width: 600px) { .app { border-radius: 20px; height: 90vh; } }
+    .sidebar { width: 200px; background: #141c24; border-right: 1px solid #00ffcc44; display: flex; flex-direction: column; flex-shrink: 0; }
+    .sidebar-header { padding: 12px; border-bottom: 1px solid #00ffcc44; color: #00ffcc; font-size: 14px; font-weight: bold; text-align: center; }
+    .user-list { flex: 1; overflow-y: auto; padding: 6px; }
+    .user-item { padding: 10px 12px; border-radius: 10px; color: #00ffcc; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; font-size: 14px; }
     .user-item:hover { background: #1a222c; }
     .user-item.active { background: #00ffcc22; border-left: 3px solid #00ffcc; }
-    .chat { flex: 1; display: flex; flex-direction: column; }
-    .chat-header { padding: 16px; border-bottom: 1px solid #00ffcc44; color: #00ffcc; font-size: 18px; display: flex; align-items: center; gap: 10px; }
-    .chat-messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-    .message { max-width: 70%; padding: 10px 14px; border-radius: 16px; font-size: 14px; word-break: break-word; }
+    .chat { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .chat-header { padding: 12px 16px; border-bottom: 1px solid #00ffcc44; color: #00ffcc; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+    .chat-messages { flex: 1; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+    .message { max-width: 75%; padding: 8px 12px; border-radius: 14px; font-size: 14px; word-break: break-word; }
     .message.own { align-self: flex-end; background: #00ffcc; color: #0a0e14; border-bottom-right-radius: 4px; }
     .message.cyberpenguin { align-self: flex-start; background: #141c24; color: #00ffcc; border-bottom-left-radius: 4px; border-left: 3px solid #ffcc00; }
-    .message.system { align-self: center; background: transparent; color: #ffaa66; font-style: italic; font-size: 12px; padding: 4px 0; }
-    .chat-footer { display: flex; padding: 12px; background: #141c24; border-top: 1px solid #00ffcc44; gap: 8px; }
-    .chat-footer input { flex: 1; background: #1a222c; color: #00ffcc; border: none; padding: 10px 14px; border-radius: 20px; outline: none; font-size: 14px; }
-    .chat-footer button { background: #00ffcc; color: #0a0e14; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; }
-    .hidden { display: none; }
-    #login { display: flex; flex-direction: column; gap: 10px; padding: 20px; background: #0f161e; border-radius: 20px; max-width: 300px; width: 100%; }
-    #login input { background: #1a222c; color: #00ffcc; border: none; padding: 12px; border-radius: 20px; outline: none; }
-    #login button { background: #00ffcc; color: #0a0e14; border: none; padding: 12px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+    .message.system { align-self: center; background: transparent; color: #ffaa66; font-style: italic; font-size: 11px; padding: 4px 0; }
+    .chat-footer { display: flex; padding: 10px; background: #141c24; border-top: 1px solid #00ffcc44; gap: 6px; }
+    .chat-footer input { flex: 1; background: #1a222c; color: #00ffcc; border: none; padding: 10px 14px; border-radius: 20px; outline: none; font-size: 14px; min-width: 0; }
+    .chat-footer button { background: #00ffcc; color: #0a0e14; border: none; padding: 10px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 14px; white-space: nowrap; }
+    .hidden { display: none !important; }
+    #login { display: flex; flex-direction: column; gap: 10px; padding: 20px; background: #0f161e; border-radius: 20px; max-width: 300px; width: 90%; }
+    #login input { background: #1a222c; color: #00ffcc; border: none; padding: 12px; border-radius: 20px; outline: none; font-size: 16px; }
+    #login button { background: #00ffcc; color: #0a0e14; border: none; padding: 12px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 16px; }
+
+    /* Mobilde sidebar daralt */
+    @media (max-width: 500px) {
+      .sidebar { width: 55px; }
+      .sidebar-header { font-size: 10px; padding: 8px; }
+      .user-item { font-size: 0; padding: 10px 0; justify-content: center; }
+      .user-item::before { content: "🐧"; font-size: 18px; }
+      .chat-header { font-size: 14px; padding: 10px 12px; }
+      .message { font-size: 13px; max-width: 85%; }
+    }
   </style>
 </head>
 <body>
@@ -37,13 +48,13 @@
   </div>
   <div class="app hidden" id="app">
     <div class="sidebar" id="sidebar">
-      <div class="sidebar-header">🐧 Katılımcılar</div>
+      <div class="sidebar-header">🐧</div>
       <div class="user-list" id="userList"></div>
     </div>
     <div class="chat" id="chat">
       <div class="chat-header" id="chatHeader">💬 Sohbet</div>
       <div class="chat-messages" id="messages"></div>
-      <div class="chat-footer">
+      <div class="chat-footer" id="chatFooter">
         <input id="input" placeholder="Mesaj yaz..." />
         <button id="sendBtn">Gönder</button>
       </div>
@@ -59,10 +70,12 @@
     const userList = document.getElementById('userList');
     const messages = document.getElementById('messages');
     const chatHeader = document.getElementById('chatHeader');
+    const chatFooter = document.getElementById('chatFooter');
     const input = document.getElementById('input');
     const sendBtn = document.getElementById('sendBtn');
     let username = '';
     let currentChatId = null;
+    let currentChatName = '';
 
     joinBtn.onclick = () => {
       const val = usernameInput.value.trim();
@@ -96,7 +109,7 @@
     socket.on('user list', (users) => {
       userList.innerHTML = users.map(u => `
         <div class="user-item" data-id="${u.id}" onclick="openChat('${u.id}', '${u.name}')">
-          🐧 ${u.name}
+          ${u.name}
         </div>
       `).join('');
     });
@@ -106,7 +119,7 @@
       div.className = 'user-item';
       div.dataset.id = user.id;
       div.onclick = () => openChat(user.id, user.name);
-      div.textContent = `🐧 ${user.name}`;
+      div.textContent = user.name;
       userList.appendChild(div);
     });
 
@@ -119,15 +132,16 @@
         currentChatId = null;
         messages.innerHTML = '';
         chatHeader.textContent = '💬 Sohbet';
-        document.querySelector('.chat-footer').classList.add('hidden');
+        chatFooter.classList.add('hidden');
       }
     });
 
     window.openChat = (id, name) => {
       currentChatId = id;
+      currentChatName = name;
       messages.innerHTML = '';
-      chatHeader.innerHTML = `💬 ${name}`;
-      document.querySelector('.chat-footer').classList.remove('hidden');
+      chatHeader.textContent = `💬 ${name}`;
+      chatFooter.classList.remove('hidden');
       userList.querySelectorAll('.user-item').forEach(el => el.classList.remove('active'));
       const active = userList.querySelector(`[data-id="${id}"]`);
       if (active) active.classList.add('active');
@@ -159,7 +173,6 @@
     });
 
     socket.on('cyberpenguin private', (data) => {
-      // Yeni kullanıcıdan mesaj geldiğinde, CyberPenguin'in sohbetine ekle
       if (currentChatId === data.fromId) {
         const div = document.createElement('div');
         div.className = 'message cyberpenguin';
