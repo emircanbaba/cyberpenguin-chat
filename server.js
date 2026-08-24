@@ -7,7 +7,7 @@ app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
 });
 
-const users = {};
+const users = {}; // socket.id => { name, socket }
 
 io.on('connection', (socket) => {
   console.log('Bağlandı:', socket.id);
@@ -30,7 +30,6 @@ io.on('connection', (socket) => {
         fromId: socket.id,
         msg: data.msg
       });
-      // Kullanıcıya kendi mesajını göster (WhatsApp gibi)
       socket.emit('chat message', {
         from: userName,
         msg: data.msg,
