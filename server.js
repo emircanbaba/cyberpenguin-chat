@@ -18,10 +18,6 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('cyberpenguin notification', `${name} bağlandı.`);
   });
 
-  socket.on('global message', (data) => {
-    io.emit('chat message', data);
-  });
-
   socket.on('private message', (data) => {
     if (data.to === 'CyberPenguin') {
       socket.broadcast.emit('cyberpenguin private', {
