@@ -7,7 +7,7 @@ app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
 });
 
-const users = {}; // socket.id => { name, socket }
+const users = {};
 
 io.on('connection', (socket) => {
   console.log('Bağlandı:', socket.id);
@@ -17,19 +17,12 @@ io.on('connection', (socket) => {
     userName = name;
     users[socket.id] = { name, socket };
     socket.join(`room-${socket.id}`);
-    
-    // CyberPenguin'e yeni kullanıcıyı bildir
     socket.broadcast.emit('new user', { id: socket.id, name });
-    
-    // Kullanıcıya hoş geldin
     socket.emit('system message', `🐧 Hoş geldin ${name}. CyberPenguin ile özel sohbettesin.`);
-    
-    // CyberPenguin'e mevcut kullanıcı listesini gönder
     const userList = Object.keys(users).map(id => ({ id, name: users[id].name }));
     socket.emit('user list', userList);
   });
 
-  // Kullanıcıdan CyberPenguin'e mesaj
   socket.on('private message', (data) => {
     if (data.to === 'CyberPenguin') {
       socket.broadcast.emit('cyberpenguin private', {
@@ -45,7 +38,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // CyberPenguin'den belirli bir kullanıcıya cevap
   socket.on('cyberpenguin reply', (data) => {
     const target = users[data.to];
     if (target) {
