@@ -7,20 +7,34 @@ app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
 });
 
+const users = {}; // socket.id => { name, socket }
+
 io.on('connection', (socket) => {
   console.log('Bağlandı:', socket.id);
   let userName = '';
 
   socket.on('user joined', (name) => {
     userName = name;
+    users[socket.id] = { name, socket };
     socket.join(`room-${socket.id}`);
+    
+    // CyberPenguin'e yeni kullanıcıyı bildir
+    socket.broadcast.emit('new user', { id: socket.id, name });
+    
+    // Kullanıcıya hoş geldin
     socket.emit('system message', `🐧 Hoş geldin ${name}. CyberPenguin ile özel sohbettesin.`);
+    
+    // CyberPenguin'e mevcut kullanıcı listesini gönder
+    const userList = Object.keys(users).map(id => ({ id, name: users[id].name }));
+    socket.emit('user list', userList);
   });
 
+  // Kullanıcıdan CyberPenguin'e mesaj
   socket.on('private message', (data) => {
     if (data.to === 'CyberPenguin') {
       socket.broadcast.emit('cyberpenguin private', {
         from: userName,
+        fromId: socket.id,
         msg: data.msg
       });
       socket.emit('chat message', {
@@ -31,8 +45,22 @@ io.on('connection', (socket) => {
     }
   });
 
+  // CyberPenguin'den belirli bir kullanıcıya cevap
+  socket.on('cyberpenguin reply', (data) => {
+    const target = users[data.to];
+    if (target) {
+      target.socket.emit('chat message', {
+        from: 'CyberPenguin',
+        msg: data.msg,
+        isCyberPenguin: true
+      });
+    }
+  });
+
   socket.on('disconnect', () => {
     if (userName) {
+      delete users[socket.id];
+      socket.broadcast.emit('user left', socket.id);
       socket.broadcast.emit('system message', `${userName} ayrıldı.`);
     }
   });
