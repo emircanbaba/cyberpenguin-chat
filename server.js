@@ -15,7 +15,6 @@ io.on('connection', (socket) => {
     userName = name;
     socket.join(`room-${socket.id}`);
     socket.emit('system message', `🐧 Hoş geldin ${name}. CyberPenguin ile özel sohbettesin.`);
-    socket.broadcast.emit('cyberpenguin notification', `${name} bağlandı.`);
   });
 
   socket.on('private message', (data) => {
@@ -29,21 +28,12 @@ io.on('connection', (socket) => {
         msg: data.msg,
         isOwn: true
       });
-    } else {
-      const targetSocket = io.sockets.sockets.get(data.to);
-      if (targetSocket) {
-        targetSocket.emit('chat message', {
-          from: 'CyberPenguin',
-          msg: data.msg,
-          isCyberPenguin: true
-        });
-      }
     }
   });
 
   socket.on('disconnect', () => {
     if (userName) {
-      socket.broadcast.emit('cyberpenguin notification', `${userName} ayrıldı.`);
+      socket.broadcast.emit('system message', `${userName} ayrıldı.`);
     }
   });
 });
