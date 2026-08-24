@@ -14,38 +14,32 @@ io.on('connection', (socket) => {
   socket.on('user joined', (name) => {
     userName = name;
     socket.join(`room-${socket.id}`);
-    socket.emit('system message', `🐧 Hoş geldin ${name}. Alpha ile özel sohbettesin.`);
-    // Alpha'ya bildirim
-    socket.broadcast.emit('alpha notification', `${name} bağlandı.`);
+    socket.emit('system message', `🐧 Hoş geldin ${name}. CyberPenguin ile özel sohbettesin.`);
+    socket.broadcast.emit('cyberpenguin notification', `${name} bağlandı.`);
   });
 
-  // Herkese genel mesaj (sadece Alpha kullanır)
   socket.on('global message', (data) => {
     io.emit('chat message', data);
   });
 
-  // Özel mesaj (Alpha'dan kullanıcıya veya kullanıcıdan Alpha'ya)
   socket.on('private message', (data) => {
-    if (data.to === 'Alpha') {
-      // Kullanıcı Alpha'ya yazdı
-      socket.broadcast.emit('alpha private', {
+    if (data.to === 'CyberPenguin') {
+      socket.broadcast.emit('cyberpenguin private', {
         from: userName,
         msg: data.msg
       });
-      // Kendisine de göster
       socket.emit('chat message', {
         from: userName,
         msg: data.msg,
         isOwn: true
       });
     } else {
-      // Alpha'dan belirli bir kullanıcıya
       const targetSocket = io.sockets.sockets.get(data.to);
       if (targetSocket) {
         targetSocket.emit('chat message', {
-          from: 'Alpha',
+          from: 'CyberPenguin',
           msg: data.msg,
-          isAlpha: true
+          isCyberPenguin: true
         });
       }
     }
@@ -53,7 +47,7 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     if (userName) {
-      socket.broadcast.emit('alpha notification', `${userName} ayrıldı.`);
+      socket.broadcast.emit('cyberpenguin notification', `${userName} ayrıldı.`);
     }
   });
 });
