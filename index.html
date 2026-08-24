@@ -37,7 +37,7 @@
     #login input { background: #1a222c; color: #00ffcc; border: none; padding: 12px; border-radius: 20px; outline: none; font-size: 16px; }
     #login button { background: #00ffcc; color: #0a0e14; border: none; padding: 12px; border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 16px; }
 
-    /* ===== MOBİL OPTİMİZASYON ===== */
+    /* ===== MOBİL (WhatsApp gibi) ===== */
     @media (max-width: 500px) {
       .app { max-height: 100vh; height: 100vh; border-radius: 0; flex-direction: column; }
       .sidebar { width: 100%; height: auto; max-height: 40%; border-right: none; border-bottom: 1px solid #00ffcc44; }
@@ -112,6 +112,12 @@
       } else {
         socket.emit('cyberpenguin reply', { to: currentChatId, msg });
       }
+      // Mesajı kendi ekranına hemen bas (WhatsApp gibi)
+      const div = document.createElement('div');
+      div.className = 'message own';
+      div.textContent = msg;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
       input.value = '';
       input.focus();
     };
@@ -160,19 +166,19 @@
     };
 
     socket.on('chat message', (data) => {
-      const div = document.createElement('div');
-      div.className = 'message';
-      if (data.isCyberPenguin) {
-        div.classList.add('cyberpenguin');
-        div.textContent = data.msg;
-      } else if (data.isOwn) {
-        div.classList.add('own');
-        div.textContent = data.msg;
-      } else {
-        div.textContent = data.msg;
+      // Eğer bu mesaj zaten ekranda yoksa (kendi mesajı hariç)
+      if (!data.isOwn) {
+        const div = document.createElement('div');
+        div.className = 'message';
+        if (data.isCyberPenguin) {
+          div.classList.add('cyberpenguin');
+          div.textContent = data.msg;
+        } else {
+          div.textContent = data.msg;
+        }
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
       }
-      messages.appendChild(div);
-      messages.scrollTop = messages.scrollHeight;
     });
 
     socket.on('system message', (msg) => {
