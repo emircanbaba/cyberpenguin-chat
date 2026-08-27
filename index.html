@@ -69,6 +69,10 @@
       width: 36px; height: 36px; border-radius: 50%; background: #00ffcc33;
       display: flex; align-items: center; justify-content: center; font-size: 18px;
     }
+    .user-item .ip-badge {
+      font-size: 10px; background: #ff66aa33; color: #ff66aa; padding: 2px 8px;
+      border-radius: 20px; margin-left: auto;
+    }
 
     /* ===== CHAT ===== */
     .chat {
@@ -108,6 +112,12 @@
       font-style: italic; font-size: 12px; padding: 6px 0;
       max-width: 90%;
     }
+    .message.ip-log {
+      align-self: center; background: #ff66aa22; color: #ff66aa;
+      font-size: 13px; padding: 8px 16px; border-radius: 12px;
+      max-width: 95%; white-space: pre-wrap; text-align: center;
+      border: 1px solid #ff66aa44;
+    }
 
     .chat-footer {
       display: flex; padding: 12px 16px; background: #141c24;
@@ -126,24 +136,16 @@
 
     .hidden { display: none !important; }
 
-    /* ===== MOBİL (WhatsApp tarzı) ===== */
+    /* ===== MOBİL ===== */
     @media (max-width: 600px) {
       .app { max-height: 100vh; height: 100vh; border-radius: 0; flex-direction: column; }
-      .sidebar {
-        width: 100%; height: auto; max-height: 35%; border-right: none;
-        border-bottom: 1px solid #00ffcc33;
-      }
+      .sidebar { width: 100%; height: auto; max-height: 35%; border-right: none; border-bottom: 1px solid #00ffcc33; }
       .sidebar-header { font-size: 14px; padding: 10px; }
-      .user-list {
-        display: flex; flex-wrap: nowrap; overflow-x: auto; padding: 6px 8px; gap: 6px;
-      }
-      .user-item {
-        padding: 8px 14px; font-size: 14px; white-space: nowrap; flex-shrink: 0;
-        border-left: none; border-bottom: 3px solid transparent;
-        border-radius: 30px; background: #0f161e;
-      }
+      .user-list { display: flex; flex-wrap: nowrap; overflow-x: auto; padding: 6px 8px; gap: 6px; }
+      .user-item { padding: 8px 14px; font-size: 14px; white-space: nowrap; flex-shrink: 0; border-left: none; border-bottom: 3px solid transparent; border-radius: 30px; background: #0f161e; }
       .user-item.active { border-bottom-color: #00ffcc; background: #00ffcc22; }
       .user-item .avatar { width: 30px; height: 30px; font-size: 14px; }
+      .user-item .ip-badge { display: none; }
       .chat { height: 65%; }
       .chat-header { padding: 10px 14px; font-size: 16px; }
       .chat-header .avatar { width: 34px; height: 34px; font-size: 16px; }
@@ -156,7 +158,6 @@
       #login h1 { font-size: 20px; }
     }
 
-    /* ===== SCROLLBAR ===== */
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #00ffcc55; border-radius: 10px; }
@@ -173,24 +174,22 @@
 
   <!-- APP -->
   <div class="app hidden" id="app">
-    <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
-      <div class="sidebar-header">🐧 Katılımcılar</div>
+      <div class="sidebar-header">🐧 Katılımcılar <span id="userCount"></span></div>
       <div class="user-list" id="userList"></div>
     </div>
 
-    <!-- Chat -->
     <div class="chat" id="chat">
       <div class="chat-header" id="chatHeader">
         <div class="avatar">🐧</div>
         <div>
-          <div class="name">CyberPenguin</div>
-          <div class="status">çevrimiçi</div>
+          <div class="name" id="chatName">CyberPenguin</div>
+          <div class="status" id="chatStatus">çevrimiçi</div>
         </div>
       </div>
       <div class="chat-messages" id="messages"></div>
       <div class="chat-footer" id="chatFooter">
-        <input id="input" placeholder="Mesaj yaz..." />
+        <input id="input" placeholder="Mesaj yaz... (Alpha: /iplog, /users)" />
         <button id="sendBtn">Gönder</button>
       </div>
     </div>
@@ -201,14 +200,16 @@
     (function() {
       const socket = io();
 
-      // DOM refs
       const loginDiv = document.getElementById('login');
       const usernameInput = document.getElementById('usernameInput');
       const joinBtn = document.getElementById('joinBtn');
       const appDiv = document.getElementById('app');
       const userList = document.getElementById('userList');
+      const userCount = document.getElementById('userCount');
       const messages = document.getElementById('messages');
       const chatHeader = document.getElementById('chatHeader');
+      const chatName = document.getElementById('chatName');
+      const chatStatus = document.getElementById('chatStatus');
       const chatFooter = document.getElementById('chatFooter');
       const input = document.getElementById('input');
       const sendBtn = document.getElementById('sendBtn');
@@ -216,46 +217,91 @@
       let username = '';
       let currentChatId = null;
       let currentChatName = 'CyberPenguin';
+      let isAlpha = false;
+      let allUsers = {};
 
       // ===== GİRİŞ =====
       joinBtn.onclick = () => {
         const val = usernameInput.value.trim();
         if (val) {
           username = val;
+          isAlpha = (username === 'Alpha');
           loginDiv.classList.add('hidden');
           appDiv.classList.remove('hidden');
           socket.emit('user joined', username);
           input.focus();
-          // Başlığı güncelle
-          chatHeader.querySelector('.name').textContent = 'CyberPenguin';
-          chatHeader.querySelector('.status').textContent = 'çevrimiçi';
+          chatName.textContent = 'CyberPenguin';
+          chatStatus.textContent = 'çevrimiçi';
           chatFooter.classList.remove('hidden');
           currentChatId = 'CyberPenguin';
           currentChatName = 'CyberPenguin';
-          // Aktif kullanıcıyı işaretle (kendisi)
           document.querySelectorAll('.user-item').forEach(el => el.classList.remove('active'));
+          if (isAlpha) {
+            addSystemMessage('👑 Alpha hoş geldin. Tüm IP\'ler senin amk.');
+          }
         }
       };
       usernameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') joinBtn.click(); });
 
-      // ===== MESAJ GÖNDER =====
+      // ===== MESAJ FONKSİYONLARI =====
+      function addMessage(text, type = '') {
+        const div = document.createElement('div');
+        div.className = 'message';
+        if (type) div.classList.add(type);
+        div.textContent = text;
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      function addSystemMessage(text) {
+        const div = document.createElement('div');
+        div.className = 'message system';
+        div.textContent = text;
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      function addIPLog(text) {
+        const div = document.createElement('div');
+        div.className = 'message ip-log';
+        div.textContent = text;
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+      }
+
       const sendMessage = () => {
         const msg = input.value.trim();
         if (!msg || !currentChatId) return;
 
-        // Eğer CyberPenguin'e yazıyorsa
+        // ===== ALPHA KOMUTLARI =====
+        if (isAlpha && msg.startsWith('/')) {
+          const cmd = msg.slice(1).trim();
+          if (cmd === 'iplog') {
+            socket.emit('admin get iplog');
+            input.value = '';
+            input.focus();
+            return;
+          } else if (cmd === 'users') {
+            socket.emit('admin get users');
+            input.value = '';
+            input.focus();
+            return;
+          } else {
+            addSystemMessage('Bilinmeyen komut amk. /iplog veya /users');
+            input.value = '';
+            input.focus();
+            return;
+          }
+        }
+
+        // Normal mesaj
         if (currentChatId === 'CyberPenguin') {
           socket.emit('private message', { to: 'CyberPenguin', msg });
         } else {
-          // Belirli bir kullanıcıya cevap
           socket.emit('cyberpenguin reply', { to: currentChatId, msg });
         }
 
-        // Mesajı kendi ekranına hemen bas (WhatsApp)
-        const div = document.createElement('div');
-        div.className = 'message own';
-        div.textContent = msg;
-        messages.appendChild(div);
+        addMessage(msg, 'own');
         messages.scrollTop = messages.scrollHeight;
         input.value = '';
         input.focus();
@@ -264,99 +310,98 @@
       sendBtn.onclick = sendMessage;
       input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
 
-      // ===== SOCKET OLAYLARI =====
-
-      // Kullanıcı listesi
+      // ===== SOCKET =====
       socket.on('user list', (users) => {
-        userList.innerHTML = users.map(u => `
-          <div class="user-item" data-id="${u.id}" onclick="window.openChat('${u.id}', '${u.name}')">
-            <div class="avatar">🐧</div>
-            ${u.name}
-          </div>
-        `).join('');
-        // Eğer mevcut sohbet açık değilse ilk kullanıcıyı aç
-        if (users.length > 0 && !currentChatId) {
-          window.openChat(users[0].id, users[0].name);
+        allUsers = {};
+        users.forEach(u => { allUsers[u.id] = u; });
+        renderUserList(users);
+        userCount.textContent = `(${users.length})`;
+      });
+
+      socket.on('new user', (user) => {
+        allUsers[user.id] = user;
+        renderUserList(Object.values(allUsers));
+        userCount.textContent = `(${Object.keys(allUsers).length})`;
+        if (isAlpha) {
+          addSystemMessage(`📡 Yeni IP yakalandı: ${user.name} -> ${user.ip || 'gizli'}`);
         }
       });
 
-      // Yeni kullanıcı
-      socket.on('new user', (user) => {
-        const div = document.createElement('div');
-        div.className = 'user-item';
-        div.dataset.id = user.id;
-        div.onclick = () => window.openChat(user.id, user.name);
-        div.innerHTML = `<div class="avatar">🐧</div>${user.name}`;
-        userList.appendChild(div);
-      });
-
-      // Kullanıcı ayrıldı
       socket.on('user left', (id) => {
-        document.querySelectorAll('.user-item').forEach(el => {
-          if (el.dataset.id === id) el.remove();
-        });
+        delete allUsers[id];
+        renderUserList(Object.values(allUsers));
+        userCount.textContent = `(${Object.keys(allUsers).length})`;
         if (currentChatId === id) {
           currentChatId = null;
           messages.innerHTML = '';
-          chatHeader.querySelector('.name').textContent = 'Sohbet';
-          chatHeader.querySelector('.status').textContent = '';
+          chatName.textContent = 'Sohbet';
+          chatStatus.textContent = '';
           chatFooter.classList.add('hidden');
         }
       });
 
-      // Gelen mesaj (kullanıcıdan veya CyberPenguin'den)
       socket.on('chat message', (data) => {
-        // Eğer bu mesaj zaten ekranda değilse (kendi mesajı hariç)
         if (!data.isOwn) {
-          const div = document.createElement('div');
-          div.className = 'message';
           if (data.isCyberPenguin) {
-            div.classList.add('cyberpenguin');
-            div.textContent = data.msg;
+            addMessage(data.msg, 'cyberpenguin');
           } else {
-            div.textContent = data.msg;
+            addMessage(data.msg);
           }
-          messages.appendChild(div);
-          messages.scrollTop = messages.scrollHeight;
         }
       });
 
-      // Sistem mesajı
       socket.on('system message', (msg) => {
-        const div = document.createElement('div');
-        div.className = 'message system';
-        div.textContent = msg;
-        messages.appendChild(div);
-        messages.scrollTop = messages.scrollHeight;
+        addSystemMessage(msg);
       });
 
-      // CyberPenguin'e özel mesaj (kullanıcıdan)
       socket.on('cyberpenguin private', (data) => {
         if (currentChatId === data.fromId) {
-          const div = document.createElement('div');
-          div.className = 'message cyberpenguin';
-          div.textContent = data.msg;
-          messages.appendChild(div);
-          messages.scrollTop = messages.scrollHeight;
+          addMessage(data.msg, 'cyberpenguin');
         }
       });
 
-      // ===== GLOBAL açma fonksiyonu =====
+      // ===== ADMIN YANITLARI =====
+      socket.on('admin iplog response', (data) => {
+        addIPLog(`📋 IP LOG:\n${data}`);
+      });
+
+      socket.on('admin users response', (data) => {
+        const list = JSON.parse(data);
+        let text = '👥 KULLANICILAR:\n';
+        list.forEach(u => {
+          text += `  ${u.name} | ${u.ip || 'IP yok'}\n`;
+        });
+        addIPLog(text);
+      });
+
+      // ===== RENDER =====
+      function renderUserList(users) {
+        userList.innerHTML = users.map(u => `
+          <div class="user-item ${currentChatId === u.id ? 'active' : ''}" data-id="${u.id}" onclick="window.openChat('${u.id}', '${u.name}')">
+            <div class="avatar">🐧</div>
+            ${u.name}
+            ${isAlpha && u.ip ? `<span class="ip-badge">${u.ip}</span>` : ''}
+          </div>
+        `).join('');
+      }
+
       window.openChat = (id, name) => {
         currentChatId = id;
         currentChatName = name;
         messages.innerHTML = '';
-        chatHeader.querySelector('.name').textContent = name;
-        chatHeader.querySelector('.status').textContent = 'çevrimiçi';
+        chatName.textContent = name;
+        chatStatus.textContent = 'çevrimiçi';
         chatFooter.classList.remove('hidden');
-        // Aktif vurgu
         document.querySelectorAll('.user-item').forEach(el => el.classList.remove('active'));
         const active = document.querySelector(`.user-item[data-id="${id}"]`);
         if (active) active.classList.add('active');
         input.focus();
+        // Sohbet açıldı mesajı
+        if (isAlpha && allUsers[id] && allUsers[id].ip) {
+          addSystemMessage(`📡 ${name} - IP: ${allUsers[id].ip}`);
+        }
       };
 
-      // Başlangıçta sohbet kapalı
       chatFooter.classList.add('hidden');
 
     })();
