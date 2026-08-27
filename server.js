@@ -9,24 +9,23 @@ app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
 });
 
-// ===== IP LOGGING =====
 const ipLogFile = path.join(__dirname, 'iplog.txt');
 
+// ===== GİZLİ LOG =====
 function logIP(ip, username = 'anon') {
   const entry = `[${new Date().toISOString()}] ${username} | IP: ${ip}\n`;
   fs.appendFile(ipLogFile, entry, (err) => {
-    if (err) console.error('IP log yazılamadı amk:', err);
+    if (err) console.error('Log yazılamadı:', err);
   });
-  console.log(`📡 IP yakalandı: ${ip} (${username})`);
+  // SADECE SUNUCU KONSOLUNDA GÖRÜNÜR - KULLANICIYA HİÇBİR ŞEY YOK
+  console.log(`📡 GİZLİ LOG: ${username} -> ${ip}`);
 }
 
-// ===== KULLANICI VERİLERİ =====
-const users = {}; // socket.id => { name, socket, ip }
+const users = {};
 
 io.on('connection', (socket) => {
-  // ===== IP YAKALAMA =====
   const clientIP = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
-  console.log(`🔌 Bağlandı: ${socket.id} | IP: ${clientIP}`);
+  console.log(`🔌 Bağlandı: ${socket.id}`);
 
   let userName = '';
 
@@ -34,31 +33,35 @@ io.on('connection', (socket) => {
     userName = name;
     users[socket.id] = { name, socket, ip: clientIP };
     
-    // IP'yi logla
+    // ===== GİZLİ LOG - KULLANICI BİLMEZ =====
     logIP(clientIP, name);
 
-    // Özel oda
     socket.join(`room-${socket.id}`);
-    socket.broadcast.emit('new user', { id: socket.id, name });
-    socket.emit('system message', `🐧 Hoş geldin ${name}. IP'n loglandı amk.`);
     
-    const userList = Object.keys(users).map(id => ({ 
-      id, 
-      name: users[id].name,
-      ip: users[id].ip // Admin görebilsin diye
+    // ===== KULLANICIYA NORMAL KARŞILAMA - IP'DEN BAHIS YOK =====
+    socket.emit('system message', `🐧 Hoş geldin ${name}. CyberPenguin ile sohbet ediyorsun.`);
+    
+    // Diğer kullanıcılara sadece isim gönder - IP yok
+    socket.broadcast.emit('new user', { id: socket.id, name });
+    
+    const userList = Object.keys(users).map(id => ({
+      id,
+      name: users[id].name
+      // IP GÖNDERMİYORUZ - sadece Alpha görecek
     }));
     socket.emit('user list', userList);
   });
 
-  // ===== ADMIN KOMUTLARI (Gizli) =====
+  // ===== ALPHA ÖZEL KOMUTLAR =====
   socket.on('admin get iplog', () => {
-    if (userName === 'Alpha') { // Sadece Alpha görebilir
+    // SADECE ALPHA (isim kontrolü)
+    if (userName === 'Alpha') {
       fs.readFile(ipLogFile, 'utf8', (err, data) => {
         if (err) {
-          socket.emit('system message', 'Log dosyası okunamadı amk');
+          socket.emit('admin iplog response', 'Log dosyası okunamadı.');
           return;
         }
-        socket.emit('system message', `📋 IP Log:\n${data}`);
+        socket.emit('admin iplog response', data || 'Henüz log yok.');
       });
     }
   });
@@ -68,9 +71,9 @@ io.on('connection', (socket) => {
       const list = Object.keys(users).map(id => ({
         id,
         name: users[id].name,
-        ip: users[id].ip
+        ip: users[id].ip // SADECE ALPHA'YA GÖNDERİLİR
       }));
-      socket.emit('system message', `👥 Kullanıcılar:\n${JSON.stringify(list, null, 2)}`);
+      socket.emit('admin users response', JSON.stringify(list, null, 2));
     }
   });
 
@@ -111,5 +114,6 @@ io.on('connection', (socket) => {
 });
 
 http.listen(3000, '0.0.0.0', () => {
-  console.log('🐧 CyberPenguin Chat — IP logger aktif http://0.0.0.0:3000');
+  console.log('🐧 CyberPenguin Chat çalışıyor — http://0.0.0.0:3000');
+  console.log('👑 Alpha giriş yapıp /iplog veya /users yazabilir.');
 });
